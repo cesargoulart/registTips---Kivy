@@ -164,19 +164,30 @@ class MainApp(App):
         # Add form fields
         self.team1_input = TextInput(hint_text='Team 1')
         self.team2_input = TextInput(hint_text='Team 2')
-        self.competition_input = TextInput(hint_text='Competition')
+        self.competition_input = TextInput(hint_text='Competition', size_hint_x=0.7)
+        self.value_input = TextInput(hint_text='Value', size_hint_x=0.3)
         self.bet_input = TextInput(hint_text='Bet')
         self.sport_input = TextInput(hint_text='Sport')
         self.date_input = TextInput(hint_text='Date')
         self.live_input = Spinner(text='Yes', values=('Yes', 'No'))
-        
-        form_layout.add_widget(Label(text='Team 1:'))
+
+        self.team1_input.size_hint_x = 0.8
+        self.team2_input.size_hint_x = 0.8
+        self.competition_input.size_hint_x = 0.5
+        self.value_input.size_hint_x = 0.2
+        self.bet_input.size_hint_x = 0.4
+        self.sport_input.size_hint_x = 0.4
         form_layout.add_widget(self.team1_input)
-        form_layout.add_widget(Label(text='Team 2:'))
         form_layout.add_widget(self.team2_input)
-        form_layout.add_widget(Label(text='Competition:'))
-        form_layout.add_widget(self.competition_input)
-        
+
+        # Add Competition and Value fields on the same line
+        competition_value_layout = BoxLayout(orientation='horizontal', spacing=10)
+        competition_value_layout.add_widget(Label(text='Competition:'))
+        competition_value_layout.add_widget(self.competition_input)
+        competition_value_layout.add_widget(Label(text='Value:'))
+        competition_value_layout.add_widget(self.value_input)
+        form_layout.add_widget(competition_value_layout)
+
         # Add Bet and Sport fields on the same line
         bet_sport_layout = BoxLayout(orientation='horizontal', spacing=10)
         bet_sport_layout.add_widget(Label(text='Bet:'))
@@ -192,10 +203,15 @@ class MainApp(App):
         date_live_layout.add_widget(Label(text='Live:'))
         date_live_layout.add_widget(self.live_input)
         form_layout.add_widget(date_live_layout)
-        
+
+        # Add "Insert Tips" button
+        insert_tips_button = Button(text="Insert Tips", size_hint_y=None, height=40)
+        insert_tips_button.bind(on_press=self.insert_tips)
+        form_layout.add_widget(insert_tips_button)
+
         # Add form layout to main layout
         self.main_layout.add_widget(form_layout)
-        
+
         # Change background to dark theme
         self.main_layout.canvas.before.clear()
         with self.main_layout.canvas.before:
@@ -272,6 +288,10 @@ class MainApp(App):
             else:
                 self.combo.values = ('Option 1',)
                 self.combo.text = 'Option 1'
+
+    def insert_tips(self, instance):
+        # Placeholder for inserting tips
+        pass
 
 if __name__ == '__main__':
     MainApp().run()
