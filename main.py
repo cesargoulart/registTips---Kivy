@@ -42,242 +42,64 @@ class MainApp(App):
         # Add top buttons layout to main layout
         self.main_layout.add_widget(top_buttons_layout)
         
-        # Create horizontal layout for combobox and edit button
-        combo_layout = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=10
-        )
-        
-        # Create combobox
-        self.combo = Spinner(
-            text='Select Option',
-            values=('Option 1', 'Option 2', 'Option 3'),
-            size_hint_x=0.8
-        )
-        
-        # Create edit button for combobox
-        edit_combo_button = Button(
-            text='Edit',
-            size_hint_x=0.2
-        )
-        edit_combo_button.bind(on_press=self.show_edit_popup)
-        
-        # Add widgets to combo layout
-        combo_layout.add_widget(self.combo)
-        combo_layout.add_widget(edit_combo_button)
-        
-        # Create yes/no combo layout
-        yes_no_layout = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=10
-        )
-        
-        # Create yes/no label
-        yes_no_label = Label(
-            text='Combo: ',
-            size_hint_x=0.3
-        )
-        
-        # Create yes/no combo
-        self.combo_yes_no = Spinner(
-            text='No',
-            values=('Yes', 'No'),
-            size_hint_x=0.7
-        )
-        self.combo_yes_no.bind(text=self.on_yes_no_selection)
-        
-        # Add widgets to yes/no layout
-        yes_no_layout.add_widget(yes_no_label)
-        yes_no_layout.add_widget(self.combo_yes_no)
-        
-        # Create date input
-        date_input = TextInput(
-            hint_text='Date',
-            multiline=False,
-            size_hint_y=None,
-            height=40
-        )
-        
-        # Create Team1 container (for splitting functionality)
-        self.team1_container = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=5
-        )
-        
-        # Create Team1 field (full width by default)
-        self.team1_input = TextInput(
-            hint_text='Team 1',
-            multiline=False,
-            size_hint_x=1
-        )
-        
-        # Create Team1 split fields (hidden by default)
-        self.team1_left = TextInput(
-            hint_text='Team 1 Left',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        self.team1_right = TextInput(
-            hint_text='Team 1 Right',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        
-        # Add the default Team1 field to container
-        self.team1_container.add_widget(self.team1_input)
-        
-        # Create Team2 container (for splitting functionality)
-        self.team2_container = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=5
-        )
-        
-        # Create Team2 field (full width by default)
-        self.team2_input = TextInput(
-            hint_text='Team 2',
-            multiline=False,
-            size_hint_x=1
-        )
-        
-        # Create Team2 split fields (hidden by default)
-        self.team2_left = TextInput(
-            hint_text='Team 2 Left',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        self.team2_right = TextInput(
-            hint_text='Team 2 Right',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        
-        # Add the default Team2 field to container
-        self.team2_container.add_widget(self.team2_input)
-        
-        # Create Competition container (for splitting functionality)
-        self.competition_container = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=5
-        )
-        
-        # Create Competition field (full width by default)
-        self.competition_input = TextInput(
-            hint_text='Competition',
-            multiline=False,
-            size_hint_x=1
-        )
-        
-        # Create Competition split fields (hidden by default)
-        self.competition_left = TextInput(
-            hint_text='Competition Left',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        self.competition_right = TextInput(
-            hint_text='Competition Right',
-            multiline=False,
-            size_hint_x=0.5
-        )
-        
-        # Add the default Competition field to container
-        self.competition_container.add_widget(self.competition_input)
-        
-        sport_input = TextInput(
-            hint_text='Sport',
-            multiline=False,
-            size_hint_y=None,
-            height=40
-        )
-        
-        # Create bet input field
-        self.bet_input = TextInput(
-            hint_text='Bet',
-            multiline=False,
-            size_hint_y=None,
-            height=40
-        )
-        
-        # Create live combo layout
-        live_layout = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=40,
-            spacing=10
-        )
-        
-        # Create live label
-        live_label = Label(
-            text='Live:',
-            size_hint_x=0.3
-        )
-        
-        # Create live combo
-        self.combo_live = Spinner(
-            text='No',
-            values=('Yes', 'No'),
-            size_hint_x=0.7
-        )
-        
-        # Add widgets to live layout
-        live_layout.add_widget(live_label)
-        live_layout.add_widget(self.combo_live)
-        
-        result_input = TextInput(
-            hint_text='Result',
-            multiline=False,
-            size_hint_y=None,
-            height=40
-        )
-        
-        # Add text inputs to layout
-        self.main_layout.add_widget(combo_layout)
-        self.main_layout.add_widget(yes_no_layout)  # Add the new yes/no combo layout
-        self.main_layout.add_widget(date_input)
-        self.main_layout.add_widget(self.team1_container)
-        self.main_layout.add_widget(self.team2_container)
-        self.main_layout.add_widget(self.competition_container)
-        self.main_layout.add_widget(sport_input)
-        self.main_layout.add_widget(self.bet_input)
-        self.main_layout.add_widget(live_layout)
-        self.main_layout.add_widget(result_input)
-        
-        # Add insert button at bottom (changing to "Insert Tips")
-        insert_button = Button(
-            text='Insert Tips',
-            size_hint=(None, None),
-            size=(200, 50),
-            pos_hint={'center_x': 0.5}
-        )
-        insert_button.bind(on_press=self.on_insert)
-        self.main_layout.add_widget(insert_button)
+        # Initially load the Tips section
+        self.show_tips(None)
         
         return self.main_layout
     
     def show_tips(self, instance):
-        # Change background to black
+        # Clear the main layout except for the top buttons
+        self.main_layout.clear_widgets()
+        
+        # Re-add the top buttons layout
+        top_buttons_layout = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=50,
+            spacing=10
+        )
+        
+        # Create Tips button
+        tips_button = Button(
+            text='Tips',
+            size_hint_x=0.5
+        )
+        tips_button.bind(on_press=self.show_tips)
+        
+        # Create Insert top button
+        insert_top_button = Button(
+            text='Insert',
+            size_hint_x=0.5
+        )
+        insert_top_button.bind(on_press=self.on_insert)
+        
+        # Add buttons to top layout
+        top_buttons_layout.add_widget(tips_button)
+        top_buttons_layout.add_widget(insert_top_button)
+        
+        # Add top buttons layout to main layout
+        self.main_layout.add_widget(top_buttons_layout)
+        
+        # Change background to dark theme
         self.main_layout.canvas.before.clear()
         with self.main_layout.canvas.before:
-            Color(0, 0, 0, 1)  # Black color (R,G,B,A)
+            Color(0.1, 0.1, 0.1, 1)  # Dark gray color (R,G,B,A)
             Rectangle(pos=self.main_layout.pos, size=self.main_layout.size)
         
         # Update the rectangle size when layout size changes
         def update_rect(instance, value):
             instance.canvas.before.clear()
             with instance.canvas.before:
-                Color(0, 0, 0, 1)
+                Color(0.1, 0.1, 0.1, 1)  # Dark gray color (R,G,B,A)
                 Rectangle(pos=instance.pos, size=instance.size)
         
         self.main_layout.bind(size=update_rect, pos=update_rect)
+    
+    def show_main_interface(self, instance):
+        # Rebuild the main interface
+        self.main_layout.canvas.before.clear()
+        self.main_layout.clear_widgets()
+        self.build()
     
     def on_yes_no_selection(self, instance, value):
         # Clear the containers first
@@ -304,8 +126,90 @@ class MainApp(App):
             self.competition_container.add_widget(self.competition_input)
     
     def on_insert(self, instance):
-        # Do nothing when clicked
-        pass
+        # Clear the main layout except for the top buttons
+        self.main_layout.clear_widgets()
+        
+        # Re-add the top buttons layout
+        top_buttons_layout = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=50,
+            spacing=10
+        )
+        
+        # Create Tips button
+        tips_button = Button(
+            text='Tips',
+            size_hint_x=0.5
+        )
+        tips_button.bind(on_press=self.show_tips)
+        
+        # Create Insert top button
+        insert_top_button = Button(
+            text='Insert',
+            size_hint_x=0.5
+        )
+        insert_top_button.bind(on_press=self.on_insert)
+        
+        # Add buttons to top layout
+        top_buttons_layout.add_widget(tips_button)
+        top_buttons_layout.add_widget(insert_top_button)
+        
+        # Add top buttons layout to main layout
+        self.main_layout.add_widget(top_buttons_layout)
+        
+        # Create form layout
+        form_layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        
+        # Add form fields
+        self.team1_input = TextInput(hint_text='Team 1')
+        self.team2_input = TextInput(hint_text='Team 2')
+        self.competition_input = TextInput(hint_text='Competition')
+        self.bet_input = TextInput(hint_text='Bet')
+        self.sport_input = TextInput(hint_text='Sport')
+        self.date_input = TextInput(hint_text='Date')
+        self.live_input = Spinner(text='Yes', values=('Yes', 'No'))
+        
+        form_layout.add_widget(Label(text='Team 1:'))
+        form_layout.add_widget(self.team1_input)
+        form_layout.add_widget(Label(text='Team 2:'))
+        form_layout.add_widget(self.team2_input)
+        form_layout.add_widget(Label(text='Competition:'))
+        form_layout.add_widget(self.competition_input)
+        
+        # Add Bet and Sport fields on the same line
+        bet_sport_layout = BoxLayout(orientation='horizontal', spacing=10)
+        bet_sport_layout.add_widget(Label(text='Bet:'))
+        bet_sport_layout.add_widget(self.bet_input)
+        bet_sport_layout.add_widget(Label(text='Sport:'))
+        bet_sport_layout.add_widget(self.sport_input)
+        form_layout.add_widget(bet_sport_layout)
+        
+        # Add Date and Live fields on the same line
+        date_live_layout = BoxLayout(orientation='horizontal', spacing=10)
+        date_live_layout.add_widget(Label(text='Date:'))
+        date_live_layout.add_widget(self.date_input)
+        date_live_layout.add_widget(Label(text='Live:'))
+        date_live_layout.add_widget(self.live_input)
+        form_layout.add_widget(date_live_layout)
+        
+        # Add form layout to main layout
+        self.main_layout.add_widget(form_layout)
+        
+        # Change background to dark theme
+        self.main_layout.canvas.before.clear()
+        with self.main_layout.canvas.before:
+            Color(0.1, 0.1, 0.1, 1)  # Dark gray color (R,G,B,A)
+            Rectangle(pos=self.main_layout.pos, size=self.main_layout.size)
+        
+        # Update the rectangle size when layout size changes
+        def update_rect(instance, value):
+            instance.canvas.before.clear()
+            with instance.canvas.before:
+                Color(0.1, 0.1, 0.1, 1)  # Dark gray color (R,G,B,A)
+                Rectangle(pos=instance.pos, size=instance.size)
+        
+        self.main_layout.bind(size=update_rect, pos=update_rect)
     
     def show_edit_popup(self, instance):
         # Create content for popup
