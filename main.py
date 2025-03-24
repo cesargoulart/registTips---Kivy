@@ -6,11 +6,41 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.spinner import Spinner
 from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
+from kivy.graphics import Color, Rectangle
 
 class MainApp(App):
     def build(self):
         # Create the main layout
-        layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        self.main_layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        
+        # Create top buttons layout
+        top_buttons_layout = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=50,
+            spacing=10
+        )
+        
+        # Create Tips button
+        tips_button = Button(
+            text='Tips',
+            size_hint_x=0.5
+        )
+        tips_button.bind(on_press=self.show_tips)
+        
+        # Create Insert top button
+        insert_top_button = Button(
+            text='Insert',
+            size_hint_x=0.5
+        )
+        insert_top_button.bind(on_press=self.on_insert)
+        
+        # Add buttons to top layout
+        top_buttons_layout.add_widget(tips_button)
+        top_buttons_layout.add_widget(insert_top_button)
+        
+        # Add top buttons layout to main layout
+        self.main_layout.add_widget(top_buttons_layout)
         
         # Create horizontal layout for combobox and edit button
         combo_layout = BoxLayout(
@@ -38,6 +68,32 @@ class MainApp(App):
         combo_layout.add_widget(self.combo)
         combo_layout.add_widget(edit_combo_button)
         
+        # Create yes/no combo layout
+        yes_no_layout = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=40,
+            spacing=10
+        )
+        
+        # Create yes/no label
+        yes_no_label = Label(
+            text='Combo: ',
+            size_hint_x=0.3
+        )
+        
+        # Create yes/no combo
+        self.combo_yes_no = Spinner(
+            text='No',
+            values=('Yes', 'No'),
+            size_hint_x=0.7
+        )
+        self.combo_yes_no.bind(text=self.on_yes_no_selection)
+        
+        # Add widgets to yes/no layout
+        yes_no_layout.add_widget(yes_no_label)
+        yes_no_layout.add_widget(self.combo_yes_no)
+        
         # Create date input
         date_input = TextInput(
             hint_text='Date',
@@ -46,33 +102,95 @@ class MainApp(App):
             height=40
         )
         
-        team1_input = TextInput(
+        # Create Team1 container (for splitting functionality)
+        self.team1_container = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=40,
+            spacing=5
+        )
+        
+        # Create Team1 field (full width by default)
+        self.team1_input = TextInput(
             hint_text='Team 1',
             multiline=False,
-            size_hint_y=None,
-            height=40
+            size_hint_x=1
         )
         
-        team2_input = TextInput(
+        # Create Team1 split fields (hidden by default)
+        self.team1_left = TextInput(
+            hint_text='Team 1 Left',
+            multiline=False,
+            size_hint_x=0.5
+        )
+        self.team1_right = TextInput(
+            hint_text='Team 1 Right',
+            multiline=False,
+            size_hint_x=0.5
+        )
+        
+        # Add the default Team1 field to container
+        self.team1_container.add_widget(self.team1_input)
+        
+        # Create Team2 container (for splitting functionality)
+        self.team2_container = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=40,
+            spacing=5
+        )
+        
+        # Create Team2 field (full width by default)
+        self.team2_input = TextInput(
             hint_text='Team 2',
             multiline=False,
-            size_hint_y=None,
-            height=40
+            size_hint_x=1
         )
         
-        competition_input = TextInput(
+        # Create Team2 split fields (hidden by default)
+        self.team2_left = TextInput(
+            hint_text='Team 2 Left',
+            multiline=False,
+            size_hint_x=0.5
+        )
+        self.team2_right = TextInput(
+            hint_text='Team 2 Right',
+            multiline=False,
+            size_hint_x=0.5
+        )
+        
+        # Add the default Team2 field to container
+        self.team2_container.add_widget(self.team2_input)
+        
+        # Create Competition container (for splitting functionality)
+        self.competition_container = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=40,
+            spacing=5
+        )
+        
+        # Create Competition field (full width by default)
+        self.competition_input = TextInput(
             hint_text='Competition',
             multiline=False,
-            size_hint_y=None,
-            height=40
+            size_hint_x=1
         )
         
-        bet_input = TextInput(
-            hint_text='Bet',
+        # Create Competition split fields (hidden by default)
+        self.competition_left = TextInput(
+            hint_text='Competition Left',
             multiline=False,
-            size_hint_y=None,
-            height=40
+            size_hint_x=0.5
         )
+        self.competition_right = TextInput(
+            hint_text='Competition Right',
+            multiline=False,
+            size_hint_x=0.5
+        )
+        
+        # Add the default Competition field to container
+        self.competition_container.add_widget(self.competition_input)
         
         sport_input = TextInput(
             hint_text='Sport',
@@ -81,12 +199,38 @@ class MainApp(App):
             height=40
         )
         
-        live_input = TextInput(
-            hint_text='Live',
+        # Create bet input field
+        self.bet_input = TextInput(
+            hint_text='Bet',
             multiline=False,
             size_hint_y=None,
             height=40
         )
+        
+        # Create live combo layout
+        live_layout = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=40,
+            spacing=10
+        )
+        
+        # Create live label
+        live_label = Label(
+            text='Live:',
+            size_hint_x=0.3
+        )
+        
+        # Create live combo
+        self.combo_live = Spinner(
+            text='No',
+            values=('Yes', 'No'),
+            size_hint_x=0.7
+        )
+        
+        # Add widgets to live layout
+        live_layout.add_widget(live_label)
+        live_layout.add_widget(self.combo_live)
         
         result_input = TextInput(
             hint_text='Result',
@@ -96,30 +240,72 @@ class MainApp(App):
         )
         
         # Add text inputs to layout
-        layout.add_widget(combo_layout)
-        layout.add_widget(date_input)
-        layout.add_widget(team1_input)
-        layout.add_widget(team2_input)
-        layout.add_widget(competition_input)
-        layout.add_widget(sport_input)
-        layout.add_widget(bet_input)
-        layout.add_widget(live_input)
-        layout.add_widget(result_input)
+        self.main_layout.add_widget(combo_layout)
+        self.main_layout.add_widget(yes_no_layout)  # Add the new yes/no combo layout
+        self.main_layout.add_widget(date_input)
+        self.main_layout.add_widget(self.team1_container)
+        self.main_layout.add_widget(self.team2_container)
+        self.main_layout.add_widget(self.competition_container)
+        self.main_layout.add_widget(sport_input)
+        self.main_layout.add_widget(self.bet_input)
+        self.main_layout.add_widget(live_layout)
+        self.main_layout.add_widget(result_input)
         
-        # Add insert button
+        # Add insert button at bottom (changing to "Insert Tips")
         insert_button = Button(
-            text='Insert',
+            text='Insert Tips',
             size_hint=(None, None),
             size=(200, 50),
             pos_hint={'center_x': 0.5}
         )
         insert_button.bind(on_press=self.on_insert)
-        layout.add_widget(insert_button)
+        self.main_layout.add_widget(insert_button)
         
-        return layout
+        return self.main_layout
+    
+    def show_tips(self, instance):
+        # Change background to black
+        self.main_layout.canvas.before.clear()
+        with self.main_layout.canvas.before:
+            Color(0, 0, 0, 1)  # Black color (R,G,B,A)
+            Rectangle(pos=self.main_layout.pos, size=self.main_layout.size)
+        
+        # Update the rectangle size when layout size changes
+        def update_rect(instance, value):
+            instance.canvas.before.clear()
+            with instance.canvas.before:
+                Color(0, 0, 0, 1)
+                Rectangle(pos=instance.pos, size=instance.size)
+        
+        self.main_layout.bind(size=update_rect, pos=update_rect)
+    
+    def on_yes_no_selection(self, instance, value):
+        # Clear the containers first
+        self.team1_container.clear_widgets()
+        self.team2_container.clear_widgets()
+        self.competition_container.clear_widgets()
+        
+        if value == 'Yes':
+            # Split Team1 field into two fields
+            self.team1_container.add_widget(self.team1_left)
+            self.team1_container.add_widget(self.team1_right)
+            
+            # Split Team2 field into two fields
+            self.team2_container.add_widget(self.team2_left)
+            self.team2_container.add_widget(self.team2_right)
+            
+            # Split Competition field into two fields
+            self.competition_container.add_widget(self.competition_left)
+            self.competition_container.add_widget(self.competition_right)
+        else:
+            # Use single fields
+            self.team1_container.add_widget(self.team1_input)
+            self.team2_container.add_widget(self.team2_input)
+            self.competition_container.add_widget(self.competition_input)
     
     def on_insert(self, instance):
-        print("Insert button pressed")
+        # Do nothing when clicked
+        pass
     
     def show_edit_popup(self, instance):
         # Create content for popup
