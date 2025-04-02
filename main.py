@@ -14,6 +14,7 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 import threading
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.widget import Widget
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -616,6 +617,35 @@ class MainApp(App):
 
         scrollview.add_widget(table_layout)
         self.main_layout.add_widget(scrollview)
+
+        # Calculate total profit for filtered user view
+        if user_filter:
+            total_profit = 0
+            for tip_item in tips_data:
+                tip = tip_item['data']
+                if tip.get('status') == 'Win':
+                    total_profit += (float(tip.get('value', 0)) * float(tip.get('odd', 0))) - float(tip.get('value', 0))
+                elif tip.get('status') == 'Loose':
+                    total_profit -= float(tip.get('value', 0))
+
+            # Create total profit display
+            total_layout = BoxLayout(
+                orientation='horizontal',
+                size_hint=(1, None),
+                height=dp(50),
+                padding=[dp(10), dp(5)]
+            )
+            spacer = Widget(size_hint_x=0.7)  # Push total to the right
+            total_label = Label(
+                text=f"Total Profit: {total_profit:.2f}",
+                size_hint_x=0.3,
+                font_size='18sp',
+                bold=True,
+                color=(0.3, 0.9, 0.3, 1) if total_profit >= 0 else (0.9, 0.3, 0.3, 1)
+            )
+            total_layout.add_widget(spacer)
+            total_layout.add_widget(total_label)
+            self.main_layout.add_widget(total_layout)
 
     def filter_tips_by_user(self, username):
         """Shows tips filtered for a specific user."""
