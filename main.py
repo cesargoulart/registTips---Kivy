@@ -45,9 +45,28 @@ def letters_and_space(text, from_undo):
 
 def date_filter(text, from_undo):
     """Allow only digits and hyphens (for a format like YYYY-MM-DD)."""
-    # Limit length for safety
     text = re.sub(r'[^0-9\-]', '', text)
-    return text[:10] # Max length for YYYY-MM-DD
+    return text[:10]
+
+def odd_filter(text, from_undo):
+    """Allow only numbers and one decimal point, max 4 digits total."""
+    if not text:
+        return ''
+    # Remove any non-digit and non-decimal characters
+    filtered = re.sub(r'[^0-9\.]', '', text)
+    # Ensure only one decimal point
+    parts = filtered.split('.')
+    if len(parts) > 2:
+        filtered = parts[0] + '.' + parts[1]
+    # Limit total length to 4 characters (excluding decimal point)
+    digits = filtered.replace('.', '')
+    if len(digits) > 4:
+        if '.' in filtered:
+            dec_pos = filtered.index('.')
+            filtered = filtered[:dec_pos + (5-dec_pos)]
+        else:
+            filtered = filtered[:4]
+    return filtered
 
 # --- Helper Function for Rounded Borders ---
 def add_rounded_background(widget, bg_color, radius_dp=15):
@@ -155,14 +174,19 @@ class MainApp(App):
             return container
 
         # --- Create Input Containers using the helper ---
-        self.user_input_container = create_input_container("User", letters_and_space) # Added User container
+        self.user_input_container = create_input_container("User", letters_and_space)
         self.team1_input_container = create_input_container("Team 1", letters_and_space)
         self.team2_input_container = create_input_container("Team 2", letters_and_space)
         self.competition_input_container = create_input_container("Competition", letters_and_space)
         self.value_input_container = create_input_container("Value", 'float')
         self.bet_input_container = create_input_container("Bet Description")
         self.sport_input_container = create_input_container("Sport", letters_and_space)
-        self.date_input_container = create_input_container("Date (YYYY-MM-DD)", date_filter)
+        # Make date input shorter
+        date_container = create_input_container("YYYY-MM-DD", date_filter)
+        date_container.size_hint_x = 0.7  # Make the date field shorter
+        self.date_input_container = date_container
+        # Add odd input with custom filter
+        self.odd_input_container = create_input_container("Odd", odd_filter)
 
         # --- Live Spinner (Keep styling as it worked) ---
         self.live_input = Spinner(
@@ -188,7 +212,8 @@ class MainApp(App):
             ('Team 1:', self.team1_input_container, 'Team 2:', self.team2_input_container),
             ('Competition:', self.competition_input_container, 'Value:', self.value_input_container),
             ('Bet:', self.bet_input_container, 'Sport:', self.sport_input_container),
-            ('Date:', self.date_input_container, 'Live:', self.live_input)
+            ('Date:', self.date_input_container, 'Odd:', self.odd_input_container),
+            ('Live:', self.live_input, '', None)
         ]
 
         for row_items in rows_data:
@@ -208,7 +233,6 @@ class MainApp(App):
                 row_layout.add_widget(BoxLayout(size_hint_x=1)) # Empty space filler
 
             form_layout.add_widget(row_layout)
-
 
         # --- Insert Tip Button ---
         insert_tip_button_color = (0.3, 0.7, 0.5, 1)
@@ -243,23 +267,30 @@ class MainApp(App):
             if not value_text:
                 raise ValueError("Value cannot be empty")
 
+            # Get odd value and validate
+            odd_text = self.odd_input_container.text_input_widget.text.strip()
+            if not odd_text:
+                raise ValueError("Odd cannot be empty")
+
             tip_data = {
-                'user': self.user_input_container.text_input_widget.text.strip(), # Added user field
+                'user': self.user_input_container.text_input_widget.text.strip(),
                 'team1': self.team1_input_container.text_input_widget.text.strip(),
                 'team2': self.team2_input_container.text_input_widget.text.strip(),
                 'competition': self.competition_input_container.text_input_widget.text.strip(),
-                'value': float(value_text), # Convert to float
+                'value': float(value_text),
+                'odd': float(odd_text),  # Add odd field
                 'bet': self.bet_input_container.text_input_widget.text.strip(),
                 'sport': self.sport_input_container.text_input_widget.text.strip(),
                 'date': self.date_input_container.text_input_widget.text.strip(),
-                'live': self.live_input.text == 'Yes', # Boolean based on Spinner text
-                'inserted_at': firestore.SERVER_TIMESTAMP # Use server time
+                'live': self.live_input.text == 'Yes',
+                'inserted_at': firestore.SERVER_TIMESTAMP,
+                'status': 'Pending'
             }
 
             # Basic Validation: check if required fields are filled
-            if not all([tip_data['user'], tip_data['team1'], tip_data['team2'], tip_data['competition'], # Added user validation
+            if not all([tip_data['user'], tip_data['team1'], tip_data['team2'], tip_data['competition'],
                         tip_data['bet'], tip_data['sport'], tip_data['date']]):
-                raise ValueError("Please fill in all required fields (User, Team1, Team2, Competition, Bet, Sport, Date).") # Updated error message
+                raise ValueError("Please fill in all required fields (User, Team1, Team2, Competition, Bet, Sport, Date).")
 
             # Optional: Add more specific validation (e.g., date format) here if needed
             # Example: Validate date format
@@ -292,36 +323,36 @@ class MainApp(App):
             # instance.disabled = False
             pass
 
-
     def clear_insert_fields(self, dt):
         """Clears the text in all input fields after successful insertion."""
-        # Access the TextInput widget *inside* the container to set its text
-        if hasattr(self, 'user_input_container'): # Added user field clearing
-            self.user_input_container.text_input_widget.text = ""
-        if hasattr(self, 'team1_input_container'):
-            self.team1_input_container.text_input_widget.text = ""
-        if hasattr(self, 'team2_input_container'):
-            self.team2_input_container.text_input_widget.text = ""
-        if hasattr(self, 'competition_input_container'):
-            self.competition_input_container.text_input_widget.text = ""
-        if hasattr(self, 'value_input_container'):
-            self.value_input_container.text_input_widget.text = ""
-        if hasattr(self, 'bet_input_container'):
-            self.bet_input_container.text_input_widget.text = ""
-        if hasattr(self, 'sport_input_container'):
-            self.sport_input_container.text_input_widget.text = ""
-        if hasattr(self, 'date_input_container'):
-            self.date_input_container.text_input_widget.text = ""
+        input_containers = [
+            'user_input_container',
+            'team1_input_container',
+            'team2_input_container',
+            'competition_input_container',
+            'value_input_container',
+            'odd_input_container',  # Added odd field
+            'bet_input_container',
+            'sport_input_container',
+            'date_input_container'
+        ]
+        
+        # Clear all text input containers
+        for container_name in input_containers:
+            if hasattr(self, container_name):
+                getattr(self, container_name).text_input_widget.text = ""
+        
+        # Reset spinner to default
         if hasattr(self, 'live_input'):
-            self.live_input.text = "No" # Reset Spinner to default
+            self.live_input.text = "No"
 
     def show_popup(self, title, message):
         """Displays a simple popup message."""
         content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
-        content.add_widget(Label(text=message, size_hint_y=None, height=dp(80), text_size=(dp(250), None))) # Allow text wrapping
+        content.add_widget(Label(text=message, size_hint_y=None, height=dp(80), text_size=(dp(250), None)))
         close_button = Button(text='Close', size_hint_y=None, height=dp(40))
         content.add_widget(close_button)
-        popup_height = dp(180) # Adjust height as needed
+        popup_height = dp(180)
         popup = Popup(title=title, content=content, size_hint=(0.7, None), height=popup_height, auto_dismiss=False)
         close_button.bind(on_press=popup.dismiss)
         popup.open()
@@ -333,35 +364,43 @@ class MainApp(App):
         if FIREBASE_INITIALIZED and db:
             self.loading_label = Label(text="Loading tips...", font_size='18sp', size_hint_y=None, height=dp(50))
             self.main_layout.add_widget(self.loading_label)
-            # Fetch tips in a separate thread to avoid blocking the UI
-            threading.Thread(target=self.fetch_tips_from_firebase, daemon=True).start()
+            threading.Thread(target=lambda: self.fetch_tips_from_firebase(), daemon=True).start()
         else:
             self.main_layout.add_widget(Label(
                 text="Firebase not initialized or connection error.\nPlease check service key path and network.",
                 font_size='16sp', color=(0.9, 0.5, 0.5, 1)
             ))
 
-    def fetch_tips_from_firebase(self):
-        """Fetches tip data from Firestore in a background thread."""
+    def fetch_tips_from_firebase(self, user_filter=None):
+        """Fetches tip data from Firestore with optional user filter."""
         tips_data = []
         error_message = None
         try:
-            # Query Firestore, order by insertion time descending, limit results
-            tips_query = db.collection('tips').order_by(
-                'inserted_at', direction=firestore.Query.DESCENDING
-            ).limit(50).stream() # Get up to 50 most recent tips
-            # Convert documents to dictionaries
-            tips_data = [tip_doc.to_dict() for tip_doc in tips_query]
+            # Base query
+            query = db.collection('tips')
+            
+            # Apply filters based on user_filter
+            if user_filter:
+                # When filtering by user, order by inserted_at after the filter
+                query = query.where('user', '==', user_filter)
+                query = query.order_by('inserted_at', direction=firestore.Query.DESCENDING)
+            else:
+                # When showing all tips, just order by inserted_at
+                query = query.order_by('inserted_at', direction=firestore.Query.DESCENDING)
+            
+            # Execute query with limit
+            tips_query = query.limit(50).stream()
+            for tip_doc in tips_query:
+                tip_dict = tip_doc.to_dict()
+                tips_data.append({'id': tip_doc.id, 'data': tip_dict})
         except Exception as e:
             error_message = f"Error fetching tips: {e}"
-            print(error_message) # Log the error
+            print(error_message)
+        Clock.schedule_once(lambda dt: self.display_tips(tips_data, error_message, user_filter), 0)
 
-        # Schedule the UI update back on the main Kivy thread
-        Clock.schedule_once(lambda dt: self.display_tips(tips_data, error_message), 0)
-
-    def display_tips(self, tips_data, error_message):
+    def display_tips(self, tips_data, error_message, user_filter=None):
+        """Updates the UI to display the fetched tips with optional filter."""
         """Updates the UI to display the fetched tips or an error message."""
-        # Remove loading label if it exists
         if hasattr(self, 'loading_label') and self.loading_label.parent:
             self.main_layout.remove_widget(self.loading_label)
 
@@ -369,33 +408,40 @@ class MainApp(App):
             self.main_layout.add_widget(Label(text=error_message, font_size='16sp', color=(0.9, 0.5, 0.5, 1)))
             return
         if not tips_data:
-            self.main_layout.add_widget(Label(text="No tips found.", font_size='16sp'))
+            no_tips_label = Label(
+                text=f"No tips found{f' for user {user_filter}' if user_filter else ''}.",
+                font_size='16sp'
+            )
+            self.main_layout.add_widget(no_tips_label)
+            if user_filter:
+                clear_filter_btn = Button(
+                    text="Clear Filter", size_hint=(None, None),
+                    size=(dp(120), dp(40)), pos_hint={'center_x': 0.5},
+                    background_normal='', background_color=(0.4, 0.4, 0.6, 1),
+                    color=(1, 1, 1, 1)
+                )
+                clear_filter_btn.bind(on_press=lambda x: self.show_tips(None))
+                self.main_layout.add_widget(clear_filter_btn)
             return
 
-        # --- Create Scrollable Table for Tips ---
         scrollview = ScrollView(size_hint=(1, 1), bar_width=dp(10), scroll_type=['bars', 'content'])
-
         table_layout = GridLayout(
-            cols=7, # Number of columns (Increased to 7 for User)
-            size_hint_y=None, # Allow vertical expansion based on content
-            spacing=dp(2),    # Spacing between cells
-            padding=dp(10),   # Padding around the grid
-            row_default_height=dp(35), # Default height for rows
-            row_force_default=True     # Force default height
+            cols=10,  # Increased for new Odd column
+            size_hint_y=None,
+            spacing=dp(2),
+            padding=dp(10),
+            row_default_height=dp(35),
+            row_force_default=True
         )
-        # Make the GridLayout height fit its content
         table_layout.bind(minimum_height=table_layout.setter('height'))
-
-        headers = ["User", "Team1", "Team2", "Bet", "Competition", "Date", "Value"] # Added User header
+        headers = ["User", "Team1", "Team2", "Bet", "Competition", "Date", "Value", "Odd", "Profit", "Actions"]
         header_bg_color = (0.4, 0.4, 0.4, 1)
 
-        # Add Header Row
         for header in headers:
             header_label = Label(
                 text=header, bold=True, font_size='16sp',
-                size_hint_y=None, height=dp(40) # Fixed height for header
+                size_hint_y=None, height=dp(40)
             )
-            # Optional: Add background to header cells
             with header_label.canvas.before:
                 Color(*header_bg_color)
                 header_label._header_bg = Rectangle(pos=header_label.pos, size=header_label.size)
@@ -405,47 +451,234 @@ class MainApp(App):
             )
             table_layout.add_widget(header_label)
 
-        # Alternating Row Colors
         row_colors = [(0.22, 0.22, 0.22, 1), (0.20, 0.20, 0.20, 1)]
 
-        # Add Data Rows
-        for i, tip in enumerate(tips_data):
-            bg_color = row_colors[i % 2] # Alternate color based on row index
+        # Add filter indicator if active
+        if user_filter:
+            filter_label = Label(
+                text=f"Showing tips for {user_filter}",
+                font_size='16sp',
+                color=(0.8, 0.8, 1, 1),
+                size_hint_y=None,
+                height=dp(30)
+            )
+            clear_filter_btn = Button(
+                text="Show All Tips",
+                size_hint=(None, None),
+                size=(dp(120), dp(30)),
+                pos_hint={'center_x': 0.5},
+                background_normal='',
+                background_color=(0.4, 0.4, 0.6, 1),
+                color=(1, 1, 1, 1)
+            )
+            clear_filter_btn.bind(on_press=lambda x: self.show_tips(None))
+            filter_box = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(70), spacing=dp(10))
+            filter_box.add_widget(filter_label)
+            filter_box.add_widget(clear_filter_btn)
+            self.main_layout.add_widget(filter_box)
+
+        for i, tip_item in enumerate(tips_data):
+            tip_id = tip_item['id']
+            tip = tip_item['data']
+            bg_color = row_colors[i % 2]
+            user_name = tip.get('user', 'N/A')
             data_points = [
-                tip.get('user', 'N/A'), # Added User data
-                tip.get('team1', 'N/A'), # Use .get() for safety if keys might be missing
+                user_name,
+                tip.get('team1', 'N/A'),
                 tip.get('team2', 'N/A'),
                 tip.get('bet', 'N/A'),
                 tip.get('competition', 'N/A'),
                 tip.get('date', 'N/A'),
-                str(tip.get('value', 'N/A')) # Convert value to string
+                str(tip.get('value', 'N/A')),
+                str(tip.get('odd', 'N/A')),
+                str((float(tip.get('value', 0)) * float(tip.get('odd', 0))) - float(tip.get('value', 0))) if tip.get('status') == 'Win'
+                    else str(-float(tip.get('value', 0))) if tip.get('status') == 'Loose'
+                    else 'Pending'
             ]
 
-            for data in data_points:
-                cell_label = Label(
-                    text=data, font_size='14sp',
-                    size_hint_y=None, height=dp(30), # Row height set by grid default
-                    halign='center', valign='middle',
-                    shorten=True, shorten_from='right', # Ellipsize long text
-                    text_size=(None, None) # Allow label to determine its size initially
-                )
-                # Set background color for the cell
-                with cell_label.canvas.before:
+            for i_data, data in enumerate(data_points):
+                # Create cell widget (button for username, label for others)
+                if i_data == 0 and data != "User":  # First column (username) but not header
+                    cell = Button(
+                        text=data,
+                        font_size='14sp',
+                        size_hint_y=None,
+                        height=dp(30),
+                        halign='center',
+                        valign='middle',
+                        background_normal='',
+                        background_down='',
+                        background_color=(0, 0, 0, 0),
+                        color=(0.8, 0.8, 1, 1)  # Light blue text for username
+                    )
+                    cell.bind(on_press=lambda btn, name=data: self.filter_tips_by_user(name))
+                else:
+                    cell = Label(
+                        text=data,
+                        font_size='14sp',
+                        size_hint_y=None,
+                        height=dp(30),
+                        halign='center',
+                        valign='middle'
+                    )
+
+                # Add background to cell
+                with cell.canvas.before:
                     Color(*bg_color)
-                    cell_label._cell_bg = Rectangle(pos=cell_label.pos, size=cell_label.size)
-
-                # Update background rect on pos/size change
-                cell_label.bind(
-                    pos=lambda instance, value: setattr(instance._cell_bg, 'pos', instance.pos) if hasattr(instance, '_cell_bg') else None,
-                    size=lambda instance, value: setattr(instance._cell_bg, 'size', instance.size) if hasattr(instance, '_cell_bg') else None
+                    cell._bg = Rectangle(pos=cell.pos, size=cell.size)
+                
+                # Bind position and size updates
+                cell.bind(
+                    pos=lambda instance, value: setattr(instance._bg, 'pos', instance.pos),
+                    size=lambda instance, value: setattr(instance._bg, 'size', instance.size)
                 )
-                # Bind text_size to width for wrapping/shortening (adjust padding as needed)
-                cell_label.bind(width=lambda instance, value: setattr(instance, 'text_size', (value - dp(10), None)))
+                
+                # Set cell text size for proper text alignment
+                if isinstance(cell, Label):
+                    cell.text_size = (None, dp(30))
+                    cell.shorten = True
+                    cell.shorten_from = 'right'
+                
+                # Add cell to table
+                table_layout.add_widget(cell)
 
-                table_layout.add_widget(cell_label)
+            # --- Add Action Buttons with conditional display ---
+            action_layout = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint_y=None, height=dp(35))  # Increased height and spacing
+            tip_status = tip.get('status', 'Pending')
+            
+            if tip_status == 'Win':
+                # Show disabled Win status button with subtle animation
+                status_button = Button(
+                    text="✓ WIN", font_size='14sp', size_hint_x=1,
+                    background_normal='', background_down='',
+                    background_color=(0.2, 0.7, 0.2, 0.9),  # More solid green
+                    color=(1, 1, 1, 0.9),  # Slightly transparent white text
+                    bold=True,
+                    disabled=True
+                )
+                add_rounded_background(status_button, (0.2, 0.7, 0.2, 0.9), radius_dp=8)
+                action_layout.add_widget(status_button)
+            elif tip_status == 'Loose':  # Keeping 'Loose' for consistency with existing data
+                # Show disabled Loose status button with subtle animation
+                status_button = Button(
+                    text="✗ LOOSE", font_size='14sp', size_hint_x=1,
+                    background_normal='', background_down='',
+                    background_color=(0.8, 0.3, 0.3, 0.9),  # More solid red
+                    color=(1, 1, 1, 0.9),  # Slightly transparent white text
+                    bold=True,
+                    disabled=True
+                )
+                add_rounded_background(status_button, (0.8, 0.3, 0.3, 0.9), radius_dp=8)
+                action_layout.add_widget(status_button)
+            else:  # Pending status
+                # Win button with hover effect
+                win_button = Button(
+                    text="WIN", font_size='14sp', size_hint_x=0.5,
+                    background_normal='', background_down='',
+                    background_color=(0.2, 0.7, 0.2, 0.8),
+                    color=(1, 1, 1, 0.9),
+                    bold=True
+                )
+                add_rounded_background(win_button, (0.2, 0.7, 0.2, 0.8), radius_dp=8)
+                win_button.bind(
+                    on_press=lambda instance, t_id=tip_id: self.update_tip_status(t_id, 'Win', instance),
+                    on_release=lambda instance: setattr(instance, 'background_color', (0.2, 0.7, 0.2, 0.8))
+                )
+                
+                # Loose button with hover effect
+                loose_button = Button(
+                    text="LOOSE", font_size='14sp', size_hint_x=0.5,
+                    background_normal='', background_down='',
+                    background_color=(0.8, 0.3, 0.3, 0.8),
+                    color=(1, 1, 1, 0.9),
+                    bold=True
+                )
+                add_rounded_background(loose_button, (0.8, 0.3, 0.3, 0.8), radius_dp=8)
+                loose_button.bind(
+                    on_press=lambda instance, t_id=tip_id: self.update_tip_status(t_id, 'Loose', instance),
+                    on_release=lambda instance: setattr(instance, 'background_color', (0.8, 0.3, 0.3, 0.8))
+                )
+                
+                action_layout.add_widget(win_button)
+                action_layout.add_widget(loose_button)
+
+            # Add background to action layout
+            with action_layout.canvas.before:
+                Color(*bg_color)
+                action_layout._bg = Rectangle(pos=action_layout.pos, size=action_layout.size)
+            action_layout.bind(
+                pos=lambda instance, value: setattr(instance._bg, 'pos', instance.pos),
+                size=lambda instance, value: setattr(instance._bg, 'size', instance.size)
+            )
+
+            # Add to table
+            table_layout.add_widget(action_layout)
 
         scrollview.add_widget(table_layout)
         self.main_layout.add_widget(scrollview)
+
+    def filter_tips_by_user(self, username):
+        """Shows tips filtered for a specific user."""
+        self.main_layout.clear_widgets()
+        self.create_top_buttons()
+        
+        # Show loading state
+        self.loading_label = Label(
+            text=f"Loading tips for {username}...",
+            font_size='18sp',
+            size_hint_y=None,
+            height=dp(50)
+        )
+        self.main_layout.add_widget(self.loading_label)
+        
+        # Start fetching in background thread
+        threading.Thread(
+            target=self.fetch_tips_from_firebase,
+            kwargs={'user_filter': username},
+            daemon=True
+        ).start()
+
+    def update_tip_status(self, tip_id, new_status, button_instance=None):
+        """Starts a background thread to update the status of a tip in Firebase."""
+        if not FIREBASE_INITIALIZED or not db:
+            self.show_popup("Error", "Firebase not initialized.")
+            return
+
+        if button_instance and button_instance.parent:
+            for child in button_instance.parent.children:
+                if isinstance(child, Button):
+                    child.disabled = True
+
+        threading.Thread(
+            target=self._update_tip_in_background,
+            args=(tip_id, new_status, button_instance),
+            daemon=True
+        ).start()
+
+    def _update_tip_in_background(self, tip_id, new_status, button_instance):
+        """Performs the Firestore update in a background thread."""
+        success = False
+        error_message = None
+        try:
+            tip_ref = db.collection('tips').document(tip_id)
+            tip_ref.update({'status': new_status})
+            success = True
+            print(f"Successfully updated tip {tip_id} to status {new_status}")
+        except Exception as e:
+            error_message = f"Error updating tip {tip_id}: {e}"
+            print(error_message)
+        Clock.schedule_once(lambda dt: self._update_tip_callback(success, error_message, button_instance), 0)
+
+    def _update_tip_callback(self, success, error_message, button_instance):
+        if button_instance and button_instance.parent:
+             for child in button_instance.parent.children:
+                if isinstance(child, Button):
+                    child.disabled = False
+
+        if success:
+            self.show_tips(None)
+        else:
+            self.show_popup("Update Error", error_message or "Failed to update tip status.")
 
 # --- Run the App ---
 if __name__ == '__main__':
